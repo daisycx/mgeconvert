@@ -29,7 +29,7 @@ class OnnxConverter:
             toponet, TopologyNetwork
         ), "net must be instance of TopologyNetwork"
         self.net = toponet
-        assert 7 <= opset_version <= 12, "opset {} are not supported yet".format(
+        assert 7 <= opset_version <= 13, "opset {} are not supported yet".format(
             opset_version
         )
         self.graph_name = graph_name
@@ -113,6 +113,25 @@ class OnnxConverter:
         return model
 
 
+def remove_initializer_from_input(model):
+    if model.ir_version < 4:
+        print(
+            "Model with ir_version below 4 requires to include initilizer in graph input"
+        )
+        return model
+
+    inputs = model.graph.input
+    name_to_input = {}
+    for input in inputs:
+        name_to_input[input.name] = input
+
+    for initializer in model.graph.initializer:
+        if initializer.name in name_to_input:
+            inputs.remove(name_to_input[initializer.name])
+
+    return model
+
+
 def convert_to_onnx(
     mge_fpath, output="out.onnx", *, graph_name="graph", opset=8, outspec=None
 ):
@@ -133,6 +152,7 @@ def convert_to_onnx(
     net = TopologyNetwork(mge_fpath, prune_reshape=True, outspec=outspec)
     converter = OnnxConverter(net, None, opset, graph_name)
     model = converter.convert()
+    model = remove_initializer_from_input(model)
 
     assert isinstance(output, str), "onnx_fpath must be string"
     with open(output, "wb") as fout:

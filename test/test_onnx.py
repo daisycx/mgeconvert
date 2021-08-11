@@ -14,7 +14,10 @@ import numpy as np
 import onnxruntime as ort
 import pytest
 from mgeconvert.mge_context import TopologyNetwork, get_mge_version
-from mgeconvert.onnx_converter.onnx_converter import OnnxConverter
+from mgeconvert.onnx_converter.onnx_converter import (
+    OnnxConverter,
+    remove_initializer_from_input,
+)
 
 from .utils import (
     ActiveOpr,
@@ -27,6 +30,7 @@ from .utils import (
     PoolOpr,
     ReduceOpr,
     ReshapeOpr,
+    ResizeOpr,
     SoftmaxOpr,
     SqueezeOpr,
     SubtensorOpr,
@@ -41,12 +45,14 @@ tmp_file = "test_model"
 
 
 def _test_convert_result(
-    inputs, fpath, mge_result, max_err, min_version=7, max_version=12
+    inputs, fpath, mge_result, max_err, min_version=7, max_version=13
 ):
     net = TopologyNetwork(fpath + ".mge")
     for version in range(min_version, max_version + 1):
         converter = OnnxConverter(net, opset_version=version, graph_name="graph")
         model = converter.convert()
+        model = remove_initializer_from_input(model)
+
         with open(tmp_file + ".onnx", "wb") as fout:
             fout.write(model.SerializeToString())
         onnx_net = ort.InferenceSession(tmp_file + ".onnx")
@@ -124,9 +130,30 @@ def test_reshape():
     _test_convert_result(net.data, tmp_file, mge_result, max_error)
 
 
+def test_resize():
+    net = ResizeOpr()
+    mge_result = dump_mge_model(net, net.data, tmp_file)
+    _test_convert_result(
+        net.data, tmp_file, mge_result, max_error, min_version=13, max_version=13
+    )
+
+
 @pytest.mark.parametrize(
     "mode",
-    ["add", "sub", "mul", "div", "abs", "exp", "log", "pow", "ceil", "floor", "max"],
+    [
+        "add",
+        "sub",
+        "mul",
+        "div",
+        "abs",
+        "exp",
+        "log",
+        "pow",
+        "ceil",
+        "floor",
+        "max",
+        "min",
+    ],
 )
 def test_elemwise(mode):
     net = ElemwiseOpr(mode)

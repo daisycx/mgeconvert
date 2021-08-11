@@ -427,6 +427,10 @@ class ConvolutionBackwardDataBiasOpr(ConvolutionBackwardDataOpr):
 class ResizeForwardOpr(MgeOpr):
     name = "ResizeForward"
 
+    def __init__(self, opr):
+        super().__init__(opr)
+        self.shape_param = get_symvar_value(opr.inputs[1])
+
 
 class LeakyReluOpr(MgeOpr):
     name = "LeakyRelu"

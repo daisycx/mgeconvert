@@ -249,6 +249,10 @@ class ElemwiseOpr(M.Module):
             x = a + mge.tensor(self.data)
             y = a + mge.tensor(self.data2)
             z = F.maximum(x, y)
+        elif self.mode == "min":
+            x = a + mge.tensor(self.data)
+            y = a + mge.tensor(self.data2)
+            z = F.minimum(x, y)
 
         elif self.mode == "pow":
             z = a ** 2
@@ -302,6 +306,19 @@ class ReduceOpr(M.Module):
             return F.mean(a, axis=2)
         else:
             return F.max(a, axis=2)
+
+
+class ResizeOpr(M.Module):
+    def __init__(self):
+        super().__init__()
+        self.data = np.random.random((1, 2, 3, 4)).astype(np.float32)
+        self.out_shape = [8, 8]
+        self.out_shape2 = [3, 4]
+
+    def forward(self, x):
+        x = F.vision.interpolate(x, size=self.out_shape, mode="bilinear")
+        x = F.vision.interpolate(x, size=self.out_shape2, mode="bilinear")
+        return x
 
 
 class ActiveOpr(M.Module):

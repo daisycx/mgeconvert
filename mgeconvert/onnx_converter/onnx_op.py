@@ -28,6 +28,7 @@ from ..mge_context import (
     PoolingForwardOpr,
     ReduceOpr,
     ReshapeOpr,
+    ResizeForwardOpr,
     SharedDeviceTensorOpr,
     SubtensorOpr,
     TypeCvtOpr,
@@ -63,6 +64,20 @@ opset_version = 8
 def set_opset_version(version):
     global opset_version  # pylint: disable=W0603
     opset_version = version
+
+
+def add_params_to_inputs_version_13(
+    op_name, inputs, outputs, param, param_name, param_dtype=np.int64
+):
+    inputs.append(inputs[0] + param_name)
+    np_params = np.array(param, dtype=param_dtype)
+    param_info = onnx.helper.make_tensor_value_info(
+        inputs[1], mge2onnx_dtype_mapping[param_dtype], np_params.shape
+    )
+    net_sources = [param_info]
+    parameters = [onnx.numpy_helper.from_array(np_params, inputs[1])]
+    op = onnx.helper.make_node(op_name, inputs, outputs)
+    return op, net_sources, parameters
 
 
 class OperatorBaseConverter:
@@ -165,6 +180,7 @@ class ElemwiseConverter(OperatorBaseConverter):
         "CEIL": "Ceil",
         "POW": "Pow",
         "MAX": "Max",
+        "MIN": "Min",
     }
 
     def __init__(self, opr):
@@ -264,10 +280,21 @@ class SubtensorConverter(OperatorBaseConverter):
         self._net_sources.extend(slice_net_sources)
         nodes.append(slice_op)
         if len(squeeze_axis) > 0:
-            Squeeze = onnx.helper.make_node(
-                "Squeeze", slice_outputs, outputs, axes=squeeze_axis
-            )
-            nodes.append(Squeeze)
+            if opset_version == 13:
+                (
+                    squeeze_op,
+                    squeeze_net_sources,
+                    squeeze_param,
+                ) = add_params_to_inputs_version_13(
+                    "Squeeze", slice_outputs, outputs, squeeze_axis, "_squeeze_axis"
+                )
+                self._parameters.extend(squeeze_param)
+                self._net_sources.extend(squeeze_net_sources)
+            else:
+                squeeze_op = onnx.helper.make_node(
+                    "Squeeze", slice_outputs, outputs, axes=squeeze_axis
+                )
+            nodes.append(squeeze_op)
 
         return (nodes, self._net_sources, self._parameters)
 
@@ -330,6 +357,41 @@ class ReshapeConverter(OperatorBaseConverter):
         reshape = onnx.helper.make_node("Reshape", inputs, outputs)
         return (
             [reshape],
+            self._net_sources + [shape_tensor],
+            self._parameters + [shape_param],
+        )
+
+
+@_register_op(ResizeForwardOpr)
+class ResizeConverter(OperatorBaseConverter):
+
+    __opr_type__ = "Resize"
+
+    def convert(self):
+        inputs = self._get_inputs(exclude_idx=[1])
+        outputs = self._get_outputs()
+        inp_var = self._opr.inp_vars
+        inp_dims = len(inp_var[0].shape)
+        shape_dims = inp_var[1].np_data.shape[0]
+        if shape_dims != inp_dims:
+            self._opr.shape_param = np.hstack(
+                (
+                    np.array(inp_var[0].shape[: (inp_dims - shape_dims)]),
+                    self._opr.shape_param,
+                )
+            )
+        inputs[1] = self._opr.name + "_size_onnx"
+        shape_tensor = onnx.helper.make_tensor_value_info(
+            inputs[1], mge2onnx_dtype_mapping[np.int64], self._opr.shape_param.shape
+        )
+        shape_param = onnx.numpy_helper.from_array(
+            self._opr.shape_param.astype(np.int64), inputs[1]
+        )
+        inputs.insert(1, "")
+        inputs.insert(1, "")
+        resize = onnx.helper.make_node("Resize", inputs, outputs, mode="linear")
+        return (
+            [resize],
             self._net_sources + [shape_tensor],
             self._parameters + [shape_param],
         )
@@ -661,9 +723,16 @@ class ReduceConverter(OperatorBaseConverter):
     def convert(self):
         inputs = self._get_inputs()
         outputs = self._get_outputs()
-        nodes = onnx.helper.make_node(
-            self.__opr_type__, [inputs[0]], outputs, **self._get_attrs()
-        )
+        if opset_version == 13 and self.__opr_type__ == "ReduceSum":
+            nodes, net_sources, parameters = add_params_to_inputs_version_13(
+                self.__opr_type__, inputs, outputs, [self._opr.axis], "_axes"
+            )
+            self._parameters.extend(parameters)
+            self._net_sources.extend(net_sources)
+        else:
+            nodes = onnx.helper.make_node(
+                self.__opr_type__, [inputs[0]], outputs, **self._get_attrs()
+            )
         return [nodes], self._net_sources, self._parameters
 
 
@@ -686,15 +755,37 @@ class AxisAddRemoveConverter(OperatorBaseConverter):
             ), "AsixAddRemove converter doesn't support add and remove axises concurrently"
 
         elif len(add_axis) > 0:
-            unsqueeze = onnx.helper.make_node(
-                "Unsqueeze", inputs, outputs, axes=add_axis
-            )
-            ret = [unsqueeze]
+            if opset_version == 13:
+                (
+                    unsqueeze_op,
+                    unsqueeze_net_sources,
+                    unsqueeze_param,
+                ) = add_params_to_inputs_version_13(
+                    "Unsqueeze", inputs, outputs, remove_axis, "_add_axis"
+                )
+                self._parameters.extend(unsqueeze_param)
+                self._net_sources.extend(unsqueeze_net_sources)
+            else:
+                unsqueeze_op = onnx.helper.make_node(
+                    "Unsqueeze", inputs, outputs, axes=remove_axis
+                )
+            ret = [unsqueeze_op]
         elif len(remove_axis) > 0:
-            squeeze = onnx.helper.make_node(
-                "Squeeze", inputs, outputs, axes=remove_axis
-            )
-            ret = [squeeze]
+            if opset_version == 13:
+                (
+                    squeeze_op,
+                    squeeze_net_sources,
+                    squeeze_param,
+                ) = add_params_to_inputs_version_13(
+                    "Squeeze", inputs, outputs, remove_axis, "_remove_axis"
+                )
+                self._parameters.extend(squeeze_param)
+                self._net_sources.extend(squeeze_net_sources)
+            else:
+                squeeze_op = onnx.helper.make_node(
+                    "Squeeze", inputs, outputs, axes=remove_axis
+                )
+            ret = [squeeze_op]
         else:
             ret = []
         return ret, self._net_sources, self._parameters
