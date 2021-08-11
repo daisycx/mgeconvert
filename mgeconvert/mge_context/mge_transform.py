@@ -136,6 +136,8 @@ class TransformerRule(Enum):
     FUSE_FOR_DECONV_BIAS = 115
     FUSE_FOR_FULLY_CONNECTED = 116
     RESHAPE_BIAS_TO_1DIM = 117
+    # for TFLite Converter
+    SLICE_PARAMS_AS_INPUTS_AND_MAKE_SQUEEZE = 200
 
 
 TRANSFORMMAP: Dict[Enum, Callable] = {}
@@ -245,18 +247,20 @@ def _fuse_activation(net):
             isinstance(op, ElemwiseOpr) and op.mode in ("RELU", "TANH")
         ):
             prev_op = op.inp_oprs[0]
+            if prev_op.activation != "IDENTITY":
+                continue
 
             # activation(relu/relu6/tanh) must be fused with previous opr
             activation = getattr(op, "mode", "IDENTITY")
             activation = "RELU6" if isinstance(op, Relu6Opr) else activation
             prev_op.activation = activation
             prev_op.out_vars = op.out_vars
-            if len(op.out_oprs) > 0:
-                idx = op.out_oprs[0].inp_oprs.index(op)
-                op.out_oprs[0].inp_oprs[idx] = prev_op
-                prev_op.out_oprs = [op.out_oprs[0]]
-            else:
-                prev_op.out_oprs = []
+
+            for post_op in op.out_oprs:
+                idx = post_op.inp_oprs.index(op)
+                post_op.inp_oprs[idx] = prev_op
+                if post_op not in prev_op.out_oprs:
+                    prev_op.out_oprs.append(post_op)
 
             delete_intended.append(net._opr_ids.index(op_id))
 
@@ -408,6 +412,73 @@ def _deconv_shape_as_input(net):
         net.max_id += 1
         shape_tensor = net.get_var(shape_symvar)
         op.inp_vars = [shape_tensor, op.inp_vars[1], op.inp_vars[0]]
+
+
+@_register_tranformation_rule(TransformerRule.SLICE_PARAMS_AS_INPUTS_AND_MAKE_SQUEEZE)
+def _make_slice_as_inputs(net):
+    for op in net.all_oprs:
+        if not isinstance(op, Ops.SubtensorOpr):
+            continue
+
+        ndim = op.inp_vars[0].ndim
+
+        def make_input(axis, param, init_value):
+            # make inputs: begin, end and step.
+            ret = [init_value] * ndim  # pylint: disable=cell-var-from-loop
+            for k, v in zip(axis, param):
+                ret[k] = v
+            ret = FakeSymbolVar(
+                sid=net.max_id,
+                name=op.name + "fake_input",  # pylint: disable=cell-var-from-loop
+                shape=[len(ret)],
+                dtype=np.int32,
+                owner=op,  # pylint: disable=cell-var-from-loop
+                byte_list=np.array(ret, np.int32).tobytes(),
+            )
+            net.max_id += 1
+            return net.get_var(ret)
+
+        begins_tensor = make_input(op.axis, op.begin_param, 0)
+        ends_tensor = make_input(op.axis, op.end_param, np.iinfo(np.int32).max)
+        steps_tensor = make_input(op.axis, op.step_param, 1)
+
+        op.inp_vars = [op.inp_vars[0], begins_tensor, ends_tensor, steps_tensor]
+
+        # TFLite slice do not support squeeze axis, so insert a squeeze opr here.
+        # infer actual output shape of tflite slice
+        desired_out_shape = op.out_vars[0].shape
+        actual_out_shape = [1] * ndim
+        idx = 0
+        for i in range(ndim):
+            if i in op.squeeze_axis:
+                continue
+            actual_out_shape[i] = desired_out_shape[idx]
+            idx += 1
+        slice_out_symvar = FakeSymbolVar(
+            sid=net.max_id,
+            name=op.name + "fake_output",
+            shape=actual_out_shape,
+            dtype=op.out_vars[0].dtype,
+            owner=op,
+        )
+        net.max_id += 1
+        slice_op_output = net.get_var(slice_out_symvar)
+        old_out = op.out_vars
+        op.out_vars = [slice_op_output]
+
+        squeeze = Ops.SqueezeOpr()
+        squeeze.squeeze_dims = op.squeeze_axis
+        squeeze.inp_vars = [slice_op_output]
+        squeeze.out_vars = old_out
+        squeeze.inp_oprs = [op]
+        squeeze.out_oprs = op.out_oprs
+        op.out_oprs = [squeeze]
+        squeeze.id = net.max_id
+        net.max_id += 1
+
+        idx = net._opr_ids.index(op.id) + 1
+        net._opr_ids.insert(idx, squeeze.id)
+        net.all_oprs.insert(idx, squeeze)
 
 
 @_register_tranformation_rule(TransformerRule.PADDING_FOR_CONV)
@@ -728,6 +799,7 @@ def _fuse_for_conv_bias(opr):
             conv_node.op._opr,
             bias_node.inp_const[0][1],
         )
+        conv_bias.activation = add_opr.activation
         conv_bias.inp_vars = conv_node.op.inp_vars + bias_node.op.inp_vars[1:]
         conv_bias.out_vars = bias_node.op.out_vars
         conv_bias.inp_oprs = conv_node.op.inp_oprs
@@ -787,6 +859,7 @@ def _fuse_for_deconv_bias(opr):
             conv_node.op._opr,
             bias_node.inp_const[0][1],
         )
+        deconv_bias.activation = add_opr.activation
         deconv_bias.inp_vars = conv_node.op.inp_vars + bias_node.op.inp_vars[1:]
         deconv_bias.out_vars = bias_node.op.out_vars
         deconv_bias.inp_oprs = conv_node.op.inp_oprs
@@ -825,6 +898,7 @@ def _fuse_for_fully_connected(opr):
     bias_node = PatternNode("ADD", is_output=True)
     matrix_mul_node = PatternNode(Ops.MatrixMulOpr.__name__)
     bias_node.inp_oprs = [matrix_mul_node]
+
     add_opr = opr.out_oprs[0]
     if match(bias_node, add_opr):
         fully_connected = Ops.FullyConnectedOpr(
@@ -832,6 +906,7 @@ def _fuse_for_fully_connected(opr):
             matrix_mul_node.op._opr,
             bias_node.inp_const[0][1],
         )
+        fully_connected.activation = add_opr.activation
         fully_connected.inp_vars = (
             matrix_mul_node.op.inp_vars + bias_node.op.inp_vars[1:]
         )
@@ -873,4 +948,12 @@ def _replace_opr(net, matches: List[Ops.MgeOpr]):
         max_idx = max(net._opr_ids.index(i.id) for i in opr.inp_oprs)
         net._opr_ids.insert(max_idx + 1, opr.id)
         net.all_oprs.insert(max_idx + 1, opr)
-    net.all_oprs = list(filter(lambda opr: not opr.skip, net.all_oprs))
+    new_idxs = []
+    new_oprs = []
+    for idx, opr in zip(net._opr_ids, net.all_oprs):
+        if opr.skip:
+            continue
+        new_idxs.append(idx)
+        new_oprs.append(opr)
+    net._opr_ids = new_idxs
+    net.all_oprs = new_oprs
