@@ -23,7 +23,7 @@ def mge_to_caffe(
     transformer = IRTransform(transformer_options)
     transformed_irgraph = transformer.transform(irgraph)
 
-    converter = CaffeConverter(transformed_irgraph, graph_name, use_empty_blobs)
+    converter = CaffeConverter(transformed_irgraph, use_empty_blobs)
     converter.convert()
 
     assert isinstance(prototxt, str) and isinstance(

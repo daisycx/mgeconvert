@@ -10,11 +10,6 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
 sudo python3 -m pip uninstall flatbuffers -y
 sudo python3 -m pip install tensorflow==2.4.0
 
-sudo -H python3 -m pip install -q megengine==1.6.0rc1 -f https://megengine.org.cn/whl/mge.html
-pytest test/mge/test_tflite.py
-pytest test/traced_module/test_tflite.py
-sudo -H python3 -m pip uninstall -y megengine
-
 sudo -H python3 -m pip install -q megengine==1.5.0 -f https://megengine.org.cn/whl/mge.html
 pytest test/mge/test_tflite.py
 sudo -H python3 -m pip uninstall -y megengine

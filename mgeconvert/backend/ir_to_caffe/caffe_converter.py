@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # MegEngine is Licensed under the Apache License, Version 2.0 (the "License")
 #
 # Copyright (c) 2014-2020 Megvii Inc. All rights reserved.
@@ -34,7 +33,7 @@ class CaffeConverter:
         for layer in CaffeNet.layer:
             layer.ClearField("blobs")
 
-        with open(proto_file, "w") as f:
+        with open(proto_file, "w", encoding=None) as f:
             f.write(text_format.MessageToString(CaffeNet))
 
     @property

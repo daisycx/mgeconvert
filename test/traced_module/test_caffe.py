@@ -12,7 +12,7 @@ from test.utils import (
     ActiveOpr,
     BnOpr,
     BroadcastOpr,
-    ConcatOpr,
+    FConcatOpr,
     ConvOpr,
     ElemwiseOpr,
     FlattenOpr,
@@ -114,7 +114,7 @@ def test_transpose():
 
 
 def test_concat():
-    net = ConcatOpr()
+    net = FConcatOpr()
     data = np.random.random((1, 2, 4, 5)).astype(np.float32)
     list_data = [mge.tensor(data), mge.tensor(data)]
     tm_module, mge_result = get_traced_module(net, list_data)
@@ -177,24 +177,6 @@ def test_flatten():
     _test_convert_result(net.data, tm_module, mge_result, max_error, input_name="inps")
 
 
-test_module_name = "traced_module.mge"
-
-
-def test_traced_module():
-    net = mge.load(test_module_name)
-    net.eval()
-    output_name = net.graph.outputs
-    data = np.random.random([1, 3, 768, 1280]).astype(np.float32)
-    tm_module, mge_result = get_traced_module(net, {"data": mge.tensor(data)})
-    _test_convert_result(
-        data,
-        tm_module,
-        dict(zip(output_name, [i.numpy() for i in mge_result])),
-        1e-3,
-        input_name="kwargs_0",
-    )
-
-
 @pytest.mark.parametrize(
     "model",
     [
@@ -217,7 +199,7 @@ def test_model(model):
     else:
         commit_id = None
     net = megengine.hub.load(
-        "megengine/models", model, use_cache=True,  # commit=commit_id,  pretrained=True
+        "megengine/models", model, use_cache=True, commit=commit_id, # pretrained=True
     )
     net.eval()
     tm_module, mge_result = get_traced_module(net, mge.tensor(data))

@@ -681,9 +681,9 @@ def _pooling2d(opr, context):
         else:
             return x, x
 
-    ph, pw = _unexpand(opr.padding)
-    sh, sw = _unexpand(opr.stride)
-    kh, kw = _unexpand(opr.kernel_size)
+    ph, pw = opr.padding
+    sh, sw = opr.stride
+    kh, kw = opr.kernel_size
     assert not None in opr.inp_tensors[0].shape[2:4]
 
     ih, iw = opr.inp_tensors[0].shape[2:4]
