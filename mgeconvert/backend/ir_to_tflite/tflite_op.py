@@ -237,12 +237,12 @@ def _abs(_, builder):
 
 
 @_register_op(SigmoidOpr)
-def _sigmoid(_, _):  # pylint: disable=too-many-return-statements
+def _sigmoid(*_):  # pylint: disable=too-many-return-statements
     return BuiltinOperator.LOGISTIC, None, None
 
 
 @_register_op(ReluOpr)
-def _relu(_, _):
+def _relu(*_):
     return BuiltinOperator.RELU, None, None
 
 

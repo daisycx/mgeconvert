@@ -17,6 +17,7 @@ export PATH=$PATH:/usr/local/bin
 # build tflite interface from schema.fbs
 echo "building tflite schema..."
 cd /tmp
+rm -f schema.fbs
 tf_version=$1
 if [ ! -n "$1" ] ;then
     tf_version="r2.3"
