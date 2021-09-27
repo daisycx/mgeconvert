@@ -8,8 +8,10 @@ import mgeconvert
 def get_targets(module):
     targets = []
     for attr in dir(module):
-        if attr.startswith("convert_to"):
-            targets.append(attr[11:])
+        if attr.startswith("mge_to"):
+            targets.append(attr[6:])
+        if attr.startswith("tracedmodule_to"):
+            targets.append(attr[15:])
     return targets
 
 
@@ -21,7 +23,7 @@ def init(subparsers):
             outspec = None
             if args.end_point is not None:
                 outspec = args.end_point.split(";")
-            mgeconvert.convert_to_caffe(
+            mgeconvert.tracedmodule_to_caffe(
                 args.input, prototxt=args.prototxt, caffemodel=args.caffemodel, outspec=outspec
             )
         def caffe_parser(subparsers):
@@ -48,41 +50,13 @@ def init(subparsers):
                 help="end_point is used to specify which part of the mge model should be converted",
             )
         caffe_parser(subparsers)
-    if "cambricon" in targets:
-        def to_cambricon(args):
-            mgeconvert.convert_to_cambricon(
-                args.input,
-                args.output,
-                args.batch_size,
-                args.core_number,
-                args.data_type,
-                args.use_nhwc,
-            )
-        def cambricon_parser(subparsers):
-            p = subparsers.add_parser("cambricon")
-            p.set_defaults(func=to_cambricon)
-            p.add_argument(
-                "-i", "--input", required=True, type=str, help="megengine dumped model file"
-            )
-            p.add_argument(
-                "-o", "--output", required=True, type=str, help="converted Cambricon model file"
-            )
-            p.add_argument(
-                "-b", "--batch-size", default=4, type=int, help="best practice: 4"
-            )
-            p.add_argument("-c", "--core-number", default=1, type=int, help="c <= 16")
-            p.add_argument(
-                "-t", "--data-type", default="float32", type=str, help="float32, float16"
-            )
-            p.add_argument("--use-nhwc", action="store_true", help="default nchw")
-        cambricon_parser(subparsers)
     if "onnx" in targets:
         def to_onnx(args):
             outspec = None
             if args.end_point is not None:
                 outspec = args.end_point.split(";")
 
-            mgeconvert.convert_to_onnx(
+            mgeconvert.tracedmodule_to_onnx(
                 args.input,
                 args.output,
                 graph_name=args.graph,

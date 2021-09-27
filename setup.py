@@ -28,7 +28,7 @@ class install(_install):
         _install.finalize_options(self)
 
     def run(self):
-        options = ["caffe", "onnx", "cambricon", "tflite"]
+        options = ["caffe", "onnx", "tflite"]
         if self.targets == "all":
             targets.extend(options)
         else:
@@ -36,7 +36,11 @@ class install(_install):
 
         with open("mgeconvert/__init__.py", "a+") as init_file:
             [
-                init_file.write("from .%s_converter import convert_to_%s\n" % (i, i))
+                init_file.write("from .mge_to_%s import mge_to_%s\n" % (i, i))
+                for i in targets
+            ]
+            [
+                init_file.write("from .tm_to_%s import tracedmodule_to_%s\n" % (i, i))
                 for i in targets
             ]
 
@@ -70,19 +74,14 @@ class BuildExtension(Extension):
 ext_modules = [
     BuildExtension(
         name="caffe",
-        script="mgeconvert/caffe_converter/init.sh",
-        artifacts="mgeconvert/caffe_converter/caffe_pb",
+        script="mgeconvert/backend/ir_to_caffe/init.sh",
+        artifacts="mgeconvert/backend/ir_to_caffe/caffe_pb",
     ),
-    BuildExtension(name="onnx", script="mgeconvert/onnx_converter/init.sh"),
-    BuildExtension(
-        name="cambricon",
-        script="mgeconvert/cambricon_converter/init.sh",
-        artifacts="mgeconvert/cambricon_converter/lib/cnlib",
-    ),
+    BuildExtension(name="onnx", script="mgeconvert/backend/ir_to_onnx/init.sh"),
     BuildExtension(
         name="tflite",
-        script="mgeconvert/tflite_converter/init.sh",
-        artifacts="mgeconvert/tflite_converter/",
+        script="mgeconvert/backend/ir_to_tflite/init.sh",
+        artifacts="mgeconvert/backend/ir_to_tflite/",
     ),
 ]
 

@@ -11,6 +11,7 @@ import random
 import megengine as mge
 import megengine.functional as F
 import megengine.module as M
+from megengine.traced_module import trace_module
 import numpy as np
 from megengine.jit import trace
 
@@ -51,6 +52,11 @@ def dump_mge_model(net, data, fpath="test_model", optimize_for_inference=False):
         )
         return mge_result.numpy()
 
+
+def get_traced_module(net, *x):
+    traced_module = trace_module(net, *x)
+    expect = traced_module(*x)
+    return traced_module, expect
 
 class ConvOpr(M.Module):
     def __init__(self, mode):
@@ -127,7 +133,6 @@ class PoolOpr(M.Module):
     def forward(self, x):
         return getattr(self, self.mode + "pool")(x)
 
-
 class BnOpr(M.Module):
     def __init__(self, mode):
         super().__init__()
@@ -176,6 +181,24 @@ class ConcatOpr(M.Module):
 
     def forward(self, a):
         return F.concat([a, a], self.concat_idx)
+
+class FConcatOpr(M.Module):
+    def __init__(self):
+        super().__init__()
+        self.concat_idx = random.randint(0, 3)
+
+    def forward(self, inps):
+        return F.concat(inps, self.concat_idx)
+
+
+class MConcatOpr(M.Module):
+    def __init__(self):
+        super().__init__()
+        self.concat_idx = random.randint(0, 3)
+        self.m = M.Concat()
+
+    def forward(self, inps, axis=0):
+        return self.m(inps, axis)
 
 
 class SoftmaxOpr(M.Module):
@@ -328,7 +351,10 @@ class ActiveOpr(M.Module):
         "sigmoid": F.sigmoid,
         "leaky_relu": F.leaky_relu,
         "softmax": F.softmax,
-        "relu6": lambda x: F.maximum(F.minimum(x, 6), 0),
+        "relu6": F.relu6,
+        "hswish": F.hswish,
+        "hsigmoid": F.hsigmoid,
+        "silu": F.silu,
     }
 
     def __init__(self, mode, fused=False):
@@ -336,12 +362,14 @@ class ActiveOpr(M.Module):
         self.mode = mode
         self.fused = fused
         self.data = (np.random.random((1, 2, 3, 4)).astype(np.float32) - 0.5) * 8.0
+        self.sigmoid = M.Sigmoid()
+        self.act = ActiveOpr.str2fun[self.mode]
 
     def forward(self, x):
         if self.fused:
-            return ActiveOpr.str2fun[self.mode](x + x)
+            return self.act(x + x)
         else:
-            return ActiveOpr.str2fun[self.mode](x)
+            return self.act(x)
 
 
 class BroadcastOpr(M.Module):
@@ -413,3 +441,40 @@ class XORNet_LeakyRelu(M.Module):
         x = self.fc2(x)
         x = F.leaky_relu(x)
         return x
+
+class RepeatOpr(M.Module):
+    def __init__(self):
+        super().__init__()
+        self.data = np.random.random((2, 3, 4)).astype("float32")
+
+    def forward(self, x):
+        x = F.repeat(x, 2, axis=1)
+        return x
+
+class FlattenOpr(M.Module):
+    def __init__(self):
+        super().__init__()
+        self.data = np.random.random((1, 2, 3, 4)).astype(np.float32)
+
+    def forward(self, inps):
+        return F.flatten(inps)
+
+
+class DropoutOpr(M.Module):
+    def __init__(self):
+        super().__init__()
+        self.data = np.random.random((1, 2, 3, 4)).astype(np.float32)
+        self.drop_out = M.Dropout()
+
+    def forward(self, inps):
+        return self.drop_out(inps)
+
+
+class AdaptiveAvgPool2dOpr(M.Module):
+    def __init__(self):
+        super().__init__()
+        self.data = np.random.random((2, 512, 64, 64)).astype(np.float32)
+        self.gap = M.AdaptiveAvgPool2d((2, 2))
+
+    def forward(self, inps):
+        return self.gap(inps)
