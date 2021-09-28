@@ -21,7 +21,7 @@ from test.utils import (
 
 import megengine as mge
 import numpy as np
-import onnxruntime as ort   # pylint: disable=import-error
+import onnxruntime as ort  # pylint: disable=import-error
 import pytest
 from mgeconvert.converters.mge_to_onnx import mge_to_onnx
 

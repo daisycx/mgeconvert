@@ -17,7 +17,7 @@ from megengine.traced_module.pytree import SUPPORTED_TYPE, LeafDef, tree_flatten
 
 logger = get_logger(__name__)
 
-DEFAULT_FUSION_PATTERNS = OrderedDict() # type: OrderedDict
+DEFAULT_FUSION_PATTERNS = OrderedDict()  # type: OrderedDict
 
 
 def flatten(treedef, values):

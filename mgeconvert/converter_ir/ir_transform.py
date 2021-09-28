@@ -1,9 +1,8 @@
 from collections import OrderedDict
 from enum import Enum
 from functools import cmp_to_key
-from typing import Callable, Dict, Sequence
 from typing import Set  # pylint: disable=unused-import
-
+from typing import Callable, Dict, Sequence
 
 import numpy as np
 from megengine.core.tensor.dtype import qint32
@@ -180,7 +179,7 @@ def _make_padding(net: IRGraph):
             return True
         return False
 
-    insert_intended = OrderedDict() # type: OrderedDict
+    insert_intended = OrderedDict()  # type: OrderedDict
     for op in net.all_oprs:
         if not isinstance(op, (Conv2dOpr, _PoolOpr)):
             continue
@@ -567,7 +566,7 @@ def get_softmax_axis(ndim: int) -> int:
 
 @_register_tranformation_rule(TransformerRule.FUSE_SOFTMAX)
 def _fuse_softmax(net: IRGraph):
-    matches = OrderedDict() # type: OrderedDict
+    matches = OrderedDict()  # type: OrderedDict
 
     for op in net.all_oprs:
         if not isinstance(op, TrueDivOpr):

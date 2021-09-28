@@ -90,9 +90,7 @@ def tracedmodule_to_tflite(
     )
 
     if not require_quantize:
-        quantizer.save_quantize_params(
-            transformed_irgraph, path=quantize_file_path
-        )
+        quantizer.save_quantize_params(transformed_irgraph, path=quantize_file_path)
 
     converter = TFLiteConverter(transformed_irgraph, graph_name, quantizer=quantizer)
     model = converter.convert()

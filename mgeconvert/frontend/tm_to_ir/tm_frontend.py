@@ -24,6 +24,7 @@ from .tm_utils import get_logger
 
 logger = get_logger(__name__)
 
+
 class TM_FrontEnd:
     def __init__(self, traced_module):
         if isinstance(traced_module, TracedModule):

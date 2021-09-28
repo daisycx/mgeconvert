@@ -1,11 +1,7 @@
 import megengine.functional as F
 from megengine.core.ops import builtin
 from megengine.module.qat import QATModule
-from megengine.traced_module.expr import (
-    Apply,
-    CallFunction,
-    GetAttr,
-)
+from megengine.traced_module.expr import Apply, CallFunction, GetAttr
 
 from ...converter_ir.ir_op import ReluOpr
 from .op_generators import GenConv2dOpr, GenDeconv2dOpr

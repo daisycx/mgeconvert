@@ -17,7 +17,7 @@ from test.utils import (
     dump_mge_model,
 )
 
-import caffe    # pylint: disable=import-error
+import caffe  # pylint: disable=import-error
 import megengine
 import numpy as np
 import pytest
@@ -190,4 +190,3 @@ def test_leakyrelu_model():
     net = XORNet()
     mge_result = dump_mge_model(net, net.data, tmp_file, False)
     _test_convert_result(net.data, tmp_file, mge_result, max_error)
-

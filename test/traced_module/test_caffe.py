@@ -2,19 +2,13 @@
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT ARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-import caffe  # pylint: disable=import-error
-import megengine as mge
-import megengine.hub
-import numpy as np
-import pytest
-from mgeconvert.converters.tm_to_caffe import tracedmodule_to_caffe
 from test.utils import (
     ActiveOpr,
     BnOpr,
     BroadcastOpr,
-    FConcatOpr,
     ConvOpr,
     ElemwiseOpr,
+    FConcatOpr,
     FlattenOpr,
     LinearOpr,
     PoolOpr,
@@ -27,6 +21,13 @@ from test.utils import (
     XORNet_LeakyRelu,
     get_traced_module,
 )
+
+import caffe  # pylint: disable=import-error
+import megengine as mge
+import megengine.hub
+import numpy as np
+import pytest
+from mgeconvert.converters.tm_to_caffe import tracedmodule_to_caffe
 
 max_error = 1e-6
 tmp_file = "test_module"
@@ -222,4 +223,3 @@ def test_leakyrelu_model():
     net.eval()
     tm_module, mge_result = get_traced_module(net, mge.tensor(net.data))
     _test_convert_result(net.data, tm_module, mge_result, max_error)
-

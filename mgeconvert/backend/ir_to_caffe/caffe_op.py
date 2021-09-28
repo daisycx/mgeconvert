@@ -55,7 +55,7 @@ from ...converter_ir.ir_op import (
     VolatileSharedDeviceTensorOpr,
 )
 from ...frontend.mge_to_ir.mge_utils import get_symvar_value
-from .caffe_pb import caffe_pb2 as cp   # pylint: disable=import-error
+from .caffe_pb import caffe_pb2 as cp  # pylint: disable=import-error
 
 logger = get_logger(__name__)
 MGE2CAFFE = {}

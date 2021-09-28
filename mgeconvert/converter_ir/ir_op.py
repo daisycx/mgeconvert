@@ -1,13 +1,15 @@
 from typing import List  # pylint: disable=unused-import
+
 from .ir_tensor import IRTensor  # pylint: disable=unused-import
+
 
 class OpBase:
     skip = False
     name = ""
 
     def __init__(self) -> None:
-        self.inp_tensors = []   # type: List[IRTensor]
-        self.out_tensors = []   # type: List[IRTensor]
+        self.inp_tensors = []  # type: List[IRTensor]
+        self.out_tensors = []  # type: List[IRTensor]
         self.activation = "IDENTITY"
 
     def add_inp_tensors(self, ir_tensor):

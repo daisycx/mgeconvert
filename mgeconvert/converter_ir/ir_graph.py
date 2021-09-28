@@ -1,5 +1,5 @@
-from typing import Sequence
 from typing import List  # pylint: disable=unused-import
+from typing import Sequence
 
 from megengine.logger import get_logger
 from mgeconvert.converter_ir.ir_op import OpBase
@@ -12,11 +12,11 @@ logger = get_logger(__name__)
 class IRGraph:
     def __init__(self) -> None:
         self.graph_inputs = []  # type: List[IRTensor]
-        self.graph_outputs = [] # type: List[IRTensor]
+        self.graph_outputs = []  # type: List[IRTensor]
 
-        self._tensor_ids = []   # type: List[int]
+        self._tensor_ids = []  # type: List[int]
         self._opr_ids = []  # type: List[int]
-        self.all_tensors = []   # type: List[IRTensor]
+        self.all_tensors = []  # type: List[IRTensor]
         self.all_oprs = []  # type: List[OpBase]
 
     def add_op(self, op, index=None):

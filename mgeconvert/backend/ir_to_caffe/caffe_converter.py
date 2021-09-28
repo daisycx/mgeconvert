@@ -6,12 +6,12 @@
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT ARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 
-from google.protobuf import text_format # type: ignore
+from google.protobuf import text_format  # type: ignore
 from tqdm import tqdm
 
 from ...converter_ir.ir_graph import IRGraph
 from .caffe_op import MGE2CAFFE, _add_input_layer
-from .caffe_pb import caffe_pb2 as cp   # pylint: disable=import-error
+from .caffe_pb import caffe_pb2 as cp  # pylint: disable=import-error
 
 
 class CaffeConverter:

@@ -1,5 +1,5 @@
+from typing import List  # pylint: disable=unused-import
 from typing import Sequence
-from typing import List # pylint: disable=unused-import
 
 import numpy as np
 from megengine.traced_module.expr import CallMethod
@@ -18,8 +18,8 @@ class GenGetSubtensorOpr(OpGenBase):
         assert isinstance(self.expr, CallMethod)
         self.axis = []  # type: List[int]
         self.begin_params = []  # type: List[int]
-        self.end_params = []    # type: List[int]
-        self.step_params = []   # type: List[int]
+        self.end_params = []  # type: List[int]
+        self.step_params = []  # type: List[int]
         self.squeeze_axis = []  # type: List[int]
         if isinstance(expr.args[1], Sequence):
             for i in range(len(expr.args[1])):

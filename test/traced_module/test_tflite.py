@@ -23,8 +23,8 @@ import megengine.module as M
 import numpy as np
 import pytest
 from megengine.traced_module import trace_module
-from tensorflow.lite.python import interpreter  # pylint: disable=import-error
 from mgeconvert.converters.tm_to_tflite import tracedmodule_to_tflite
+from tensorflow.lite.python import interpreter  # pylint: disable=import-error
 
 max_error = 1e-6
 tmp_file = "test_model"
@@ -229,4 +229,3 @@ def test_float_func_conv():
     traced_module = trace_module(net, data, weight)
     tm_result = traced_module(data, weight)
     _test_convert_result([data, weight], traced_module, tm_result, max_err=1e-4)
-

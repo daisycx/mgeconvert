@@ -22,8 +22,8 @@ import megengine
 import megengine.hub
 import numpy as np
 import pytest
-from tensorflow.lite.python import interpreter  # pylint: disable=import-error
 from mgeconvert.converters.mge_to_tflite import mge_to_tflite
+from tensorflow.lite.python import interpreter  # pylint: disable=import-error
 
 max_error = 1e-6
 tmp_file = "test_model"

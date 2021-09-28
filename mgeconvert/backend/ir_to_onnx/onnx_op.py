@@ -232,8 +232,8 @@ class ElemwiseConverter(OperatorBaseConverter):
 
     def __init__(self, opr):
         super().__init__(opr)
-        assert (
-            isinstance(opr, tuple(self.support_op_map.keys()))
+        assert isinstance(
+            opr, tuple(self.support_op_map.keys())
         ), "Elemwise op doesn't support mode {}, you can implement it in ElemwiseConverter".format(
             type(opr)
         )
@@ -860,7 +860,9 @@ class BatchnormConverter(OperatorBaseConverter):
                 onnx.numpy_helper.from_array(var_, inputs[4]),
             ]
         )
-        import pdb;pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()
         bn = onnx.helper.make_node(
             "BatchNormalization", inputs, [outputs[self._opr.output_idx]]
         )
@@ -1064,7 +1066,10 @@ def gen_relu6_node(opr, inputs, outputs):
             inputs=[],
             outputs=[zero_name],
             value=onnx.helper.make_tensor(
-                name=zero_name, data_type=onnx.TensorProto.FLOAT, dims=[], vals=[0.0],  # pylint: disable=no-member
+                name=zero_name,
+                data_type=onnx.TensorProto.FLOAT,
+                dims=[],
+                vals=[0.0],  # pylint: disable=no-member
             ),
         )
         six_name = opr.out_tensors[0].name + "_const_six"
@@ -1073,7 +1078,10 @@ def gen_relu6_node(opr, inputs, outputs):
             inputs=[],
             outputs=[six_name],
             value=onnx.helper.make_tensor(
-                name=six_name, data_type=onnx.TensorProto.FLOAT, dims=[], vals=[6.0],   # pylint: disable=no-member
+                name=six_name,
+                data_type=onnx.TensorProto.FLOAT,
+                dims=[],
+                vals=[6.0],  # pylint: disable=no-member
             ),
         )
         relu6 = onnx.helper.make_node(

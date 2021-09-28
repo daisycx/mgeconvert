@@ -10,8 +10,8 @@ import collections
 from typing import List
 
 import numpy as np
-from numpy import dtype
 from mgeconvert.converter_ir.ir_quantizer import IRQuantizer
+from numpy import dtype
 
 from ...converter_ir.ir_op import (
     AbsOpr,
@@ -49,7 +49,7 @@ from ...converter_ir.ir_op import (
 from ...converter_ir.ir_tensor import IOHWFormat, IRTensor, NCHWFormat, OIHWFormat
 from ...converter_ir.ir_transform import cal_pad_mode
 from .pyflexbuffers import dumps  # pylint: disable=import-error
-from .tflite import (   # pylint: disable=import-error
+from .tflite import (  # pylint: disable=import-error
     AbsOptions,
     AddOptions,
     CastOptions,
@@ -74,7 +74,7 @@ from .tflite import (   # pylint: disable=import-error
     SubOptions,
     TransposeConvOptions,
     TransposeOptions,
-)   
+)
 from .tflite.ActivationFunctionType import (  # pylint: disable=import-error
     ActivationFunctionType,
 )

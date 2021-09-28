@@ -11,9 +11,9 @@ import random
 import megengine as mge
 import megengine.functional as F
 import megengine.module as M
-from megengine.traced_module import trace_module
 import numpy as np
 from megengine.jit import trace
+from megengine.traced_module import trace_module
 
 
 def dump_mge_model(net, data, fpath="test_model", optimize_for_inference=False):
@@ -57,6 +57,7 @@ def get_traced_module(net, *x):
     traced_module = trace_module(net, *x)
     expect = traced_module(*x)
     return traced_module, expect
+
 
 class ConvOpr(M.Module):
     def __init__(self, mode):
@@ -133,6 +134,7 @@ class PoolOpr(M.Module):
     def forward(self, x):
         return getattr(self, self.mode + "pool")(x)
 
+
 class BnOpr(M.Module):
     def __init__(self, mode):
         super().__init__()
@@ -181,6 +183,7 @@ class ConcatOpr(M.Module):
 
     def forward(self, a):
         return F.concat([a, a], self.concat_idx)
+
 
 class FConcatOpr(M.Module):
     def __init__(self):
@@ -442,6 +445,7 @@ class XORNet_LeakyRelu(M.Module):
         x = F.leaky_relu(x)
         return x
 
+
 class RepeatOpr(M.Module):
     def __init__(self):
         super().__init__()
@@ -450,6 +454,7 @@ class RepeatOpr(M.Module):
     def forward(self, x):
         x = F.repeat(x, 2, axis=1)
         return x
+
 
 class FlattenOpr(M.Module):
     def __init__(self):

@@ -6,20 +6,15 @@
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT ARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-import megengine as mge
-import numpy as np
-import onnxruntime as ort
-import pytest
-from mgeconvert.converters.tm_to_onnx import tracedmodule_to_onnx
 from test.utils import (
     ActiveOpr,
     AdaptiveAvgPool2dOpr,
     BnOpr,
     BroadcastOpr,
-    FConcatOpr,
     ConvOpr,
     DropoutOpr,
     ElemwiseOpr,
+    FConcatOpr,
     FlattenOpr,
     LinearOpr,
     PoolOpr,
@@ -33,6 +28,12 @@ from test.utils import (
     get_traced_module,
 )
 
+import megengine as mge
+import numpy as np
+import onnxruntime as ort
+import pytest
+from mgeconvert.converters.tm_to_onnx import tracedmodule_to_onnx
+
 max_error = 1e-6
 tmp_file = "test_model"
 
@@ -41,7 +42,9 @@ def _test_convert_result(
     inputs, fpath, mge_result, max_err, min_version=7, max_version=12
 ):
     for version in range(min_version, max_version + 1):
-        tracedmodule_to_onnx(fpath, tmp_file + ".onnx", opset=version, graph_name="graph")
+        tracedmodule_to_onnx(
+            fpath, tmp_file + ".onnx", opset=version, graph_name="graph"
+        )
         onnx_net = ort.InferenceSession(tmp_file + ".onnx")
         if isinstance(inputs, (list, tuple)):
             input_dict = {}
