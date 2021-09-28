@@ -199,7 +199,7 @@ def test_model(model):
     else:
         commit_id = None
     net = megengine.hub.load(
-        "megengine/models", model, use_cache=True, commit=commit_id, # pretrained=True
+        "megengine/models", model, use_cache=True, commit=commit_id, pretrained=True
     )
     net.eval()
     tm_module, mge_result = get_traced_module(net, mge.tensor(data))

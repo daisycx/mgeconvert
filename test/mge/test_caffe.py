@@ -170,7 +170,7 @@ def test_model(model):
     else:
         commit_id = None
     net = megengine.hub.load(
-        "megengine/models", model, use_cache=True, commit=commit_id,  # pretrained=True
+        "megengine/models", model, use_cache=True, commit=commit_id, pretrained=True
     )
     mge_result = dump_mge_model(net, data, tmp_file)
     _test_convert_result(data, tmp_file, mge_result, 1e-2)
@@ -191,6 +191,3 @@ def test_leakyrelu_model():
     mge_result = dump_mge_model(net, net.data, tmp_file, False)
     _test_convert_result(net.data, tmp_file, mge_result, max_error)
 
-
-if __name__ == "__main__":
-    test_reshape()

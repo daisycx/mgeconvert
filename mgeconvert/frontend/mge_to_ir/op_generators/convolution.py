@@ -155,7 +155,7 @@ class GenConvolutionBackwardFilterOpr(OpGenBase):
 class GenBatchNormalizationOpr(OpGenBase):
     def __init__(self, mge_opr, irgraph):
         super().__init__(mge_opr, irgraph)
-        self.output_idx = 4 if mge_version <= "0.6.0" else 2
+        self.output_idx = -1
         self.op = BatchNormalizationOpr(output_idx=self.output_idx)
         self.add_tensors(mge_opr)
 

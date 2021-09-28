@@ -100,9 +100,6 @@ def test_conv(mode):
 def test_reshape():
     net = ReshapeOpr(fix_batch=True)
     traced_module, tm_result = get_traced_module(net, mge.tensor(net.data))
-    import pdb
-
-    pdb.set_trace()
     print(traced_module.flatten().graph)
     _test_convert_result(mge.tensor(net.data), traced_module, tm_result, nhwc=False)
 
@@ -231,8 +228,5 @@ def test_float_func_conv():
     weight = mge.tensor(np.random.random((32, 16, 2, 2))).astype("float32")
     traced_module = trace_module(net, data, weight)
     tm_result = traced_module(data, weight)
-    _test_convert_result([data, weight], traced_module, tm_result)
+    _test_convert_result([data, weight], traced_module, tm_result, max_err=1e-4)
 
-
-if __name__ == "__main__":
-    test_reshape()

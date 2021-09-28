@@ -18,6 +18,7 @@ def tracedmodule_to_tflite(
     scales: Union[float, Sequence] = None,
     zero_points: Union[int, Sequence] = None,
     require_quantize=False,
+    param_fake_quant=False,
     quantize_file_path="quant_params.json",
     graph_name="graph",
     mtk=False,
@@ -84,7 +85,10 @@ def tracedmodule_to_tflite(
     transformer = IRTransform(transformer_options)
     transformed_irgraph = transformer.transform(irgraph)
 
-    quantizer = IRQuantizer(require_quantize=require_quantize)
+    quantizer = IRQuantizer(
+        require_quantize=require_quantize, param_fake_quant=param_fake_quant
+    )
+
     if not require_quantize:
         quantizer.save_quantize_params(
             transformed_irgraph, path=quantize_file_path

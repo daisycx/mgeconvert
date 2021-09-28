@@ -860,6 +860,7 @@ class BatchnormConverter(OperatorBaseConverter):
                 onnx.numpy_helper.from_array(var_, inputs[4]),
             ]
         )
+        import pdb;pdb.set_trace()
         bn = onnx.helper.make_node(
             "BatchNormalization", inputs, [outputs[self._opr.output_idx]]
         )
